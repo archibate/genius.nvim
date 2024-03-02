@@ -182,12 +182,14 @@ require'genius'.setup {
             temperature = 0.8,
         },
         infill_marks = {
-            completion = "Complete the following code. No repeat. Indentation must be correct. Be short and relevant.\n\n",
+            completion = "",
             cwd_eos = "\n",
             cwd_files = "### List of current directory:\n",
             file_content = "\n",
             file_eos = "\n",
             file_name = "### File: ",
+            begin_above_mark = "\n### Based on the existing files listed above, do code completion for the following file:\n",
+            begin_mark = "### Do code completion for the following file:\n",
             insertion = { "", "<INSERT_HERE>", "" },
             input_price = 0.0015,
             output_price = 0.0020,
@@ -218,6 +220,8 @@ require'genius'.setup {
             file_content = "\n",
             file_eos = "<|EOT|>",
             file_name = "### File: ",
+            begin_above_mark = "",
+            begin_mark = "",
             insertion = { "<｜fim▁begin｜>", "<｜fim▁hole｜>", "<｜fim▁end｜>" },
         },
         infill_options = {
@@ -244,6 +248,8 @@ require'genius'.setup {
             file_content = "\n",
             file_eos = "</s>",
             file_name = "### File: ",
+            begin_above_mark = "",
+            begin_mark = "",
         },
         infill_options = {
             n_predict = 100,
