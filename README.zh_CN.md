@@ -1,5 +1,7 @@
 # genius.nvim
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 小彭老师自主研发的一款由 🤖 GPT 驱动的 NeoVim 极速代码补全 🚀
 
 ## 安装

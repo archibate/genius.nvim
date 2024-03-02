@@ -922,15 +922,16 @@ function M.code_completion(delay)
         completion_notrigger = false
         return
     end
-    if delay and opts.completion_delay_ms == -1 then
-        return function () end
-    end
 
     local bufname = vim.api.nvim_buf_get_name(0)
     if not is_bufname_ok(bufname) then return end
 
     local curbuf = vim.api.nvim_get_current_buf()
     dissmiss_hint_at_cursor(curbuf)
+
+    if delay and opts.completion_delay_ms == -1 then
+        return function () end
+    end
 
     local function begin_request()
         if not vim.api.nvim_buf_is_valid(curbuf) then return function () end end

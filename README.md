@@ -1,5 +1,7 @@
 # genius.nvim
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 Blazing fast 🚀 code completion in NeoVim powered by 🤖 GPT-3.5-Turbo!
 
 ## Installation
