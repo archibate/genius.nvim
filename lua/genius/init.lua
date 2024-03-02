@@ -921,6 +921,9 @@ function M.code_completion(delay)
         completion_notrigger = false
         return
     end
+    if delay and opts.completion_delay_ms == -1 then
+        return function () end
+    end
 
     local bufname = vim.api.nvim_buf_get_name(0)
     if not is_bufname_ok(bufname) then return end
@@ -1017,7 +1020,7 @@ function M.code_completion(delay)
 
         if opts.completion_delay_ms == 0 then
             canceler = begin_request()
-        elseif opts.completion_delay_ms ~= -1 then
+        else
             timer:start(opts.completion_delay_ms, 0, vim.schedule_wrap(function ()
                 timer:stop()
                 if not timer:is_closing() then

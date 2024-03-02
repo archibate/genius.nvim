@@ -80,6 +80,12 @@ require"genius".setup {
 }
 ```
 
+If you'd like to use a custom key binding, just map to the `:GeniusComplete` command. For example:
+
+```vim
+inoremap <C-Space> <Cmd>GeniusComplete<CR>
+```
+
 # Available backends
 
 ## ChatGPT
