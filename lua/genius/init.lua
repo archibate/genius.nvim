@@ -24,48 +24,50 @@ local function S(x)
 end
 
 local default_opts = {
-    api_key = os.getenv("OPENAI_API_KEY"),
-    base_url = "https://api.openai.com",
-    chat_marks = {
-        inst_prefix_bos = "### User:\n",
-        inst_prefix_eos = "\n### User:\n",
-        inst_suffix = "\n### Assistant:\n",
-        input_price = 0.0005,
-        output_price = 0.0015,
-    },
-    chat_options = {
-        max_tokens = 512,
-        model = "gpt-3.5-turbo",
-        temperature = 0.8,
-    },
-    infill_marks = {
-        completion = "Complete the following code. No repeat. Indentation must be correct. Be short and relevant.\n\n",
-        cwd_eos = "\n",
-        cwd_files = "### List of current directory:\n",
-        file_content = "\n",
-        file_eos = "\n",
-        file_name = "### File: ",
-        insertion = { "", "<INSERT_HERE>", "" },
-        input_price = 0.0015,
-        output_price = 0.0020,
-    },
-    infill_options = {
-        max_tokens = 100,
-        model = "gpt-3.5-turbo-instruct",
-        temperature = 0.8,
-    },
     api_type = 'openai',
+    config_openai = {
+        api_key = os.getenv("OPENAI_API_KEY"),
+        base_url = "https://api.openai.com",
+        chat_marks = {
+            inst_prefix_bos = "### User:\n",
+            inst_prefix_eos = "\n### User:\n",
+            inst_suffix = "\n### Assistant:\n",
+            input_price = 0.0005,
+            output_price = 0.0015,
+        },
+        chat_options = {
+            max_tokens = 512,
+            model = "gpt-3.5-turbo",
+            temperature = 0.8,
+        },
+        infill_marks = {
+            completion = "Complete the following code. No repeat. Indentation must be correct. Be short and relevant.\n\n",
+            cwd_eos = "\n",
+            cwd_files = "### List of current directory:\n",
+            file_content = "\n",
+            file_eos = "\n",
+            file_name = "### File: ",
+            insertion = { "", "<INSERT_HERE>", "" },
+            input_price = 0.0015,
+            output_price = 0.0020,
+        },
+        infill_options = {
+            max_tokens = 100,
+            model = "gpt-3.5-turbo-instruct",
+            temperature = 0.8,
+        },
+    },
     config_deepseek = {
         base_url = "http://127.0.0.1:8080",
         chat_marks = {
             inst_prefix_bos = "Expert Q&A\nQuestion: ",
             inst_prefix_eos = "<|EOT|>\nQuestion: ",
-            inst_suffix = "\nAnswer:"
+            inst_suffix = "\nAnswer:",
         },
         chat_options = {
             n_predict = -1,
             stop = { "\nQuestion:" },
-            temperature = 0.8
+            temperature = 0.8,
         },
         escape_list = { { "<｜([%l▁]+)｜>", "<|%1|>" }, { "<|(%u+)|>", "<｜%1｜>" } },
         infill_marks = {
@@ -75,24 +77,23 @@ local default_opts = {
             file_content = "\n",
             file_eos = "<|EOT|>",
             file_name = "### File: ",
-            insertion = { "<｜fim▁begin｜>", "<｜fim▁hole｜>", "<｜fim▁end｜>" }
+            insertion = { "<｜fim▁begin｜>", "<｜fim▁hole｜>", "<｜fim▁end｜>" },
         },
         infill_options = {
             n_predict = 100,
-            temperature = 0.8
+            temperature = 0.8,
         },
-        api_type = 'llama'
     },
     config_mistral = {
         base_url = "http://127.0.0.1:8080",
         chat_marks = {
             inst_prefix_bos = "<s>[INST] ",
             inst_prefix_eos = "</s>[INST] ",
-            inst_suffix = " [/INST]"
+            inst_suffix = " [/INST]",
         },
         chat_options = {
             n_predict = -1,
-            temperature = 0.8
+            temperature = 0.8,
         },
         escape_list = { { "</?[su]n?k?>", string.upper }, { "<0x[0-9A-F][0-9A-F]>", string.upper } },
         infill_marks = {
@@ -101,20 +102,19 @@ local default_opts = {
             cwd_files = "### List of current directory:\n",
             file_content = "\n",
             file_eos = "</s>",
-            file_name = "### File: "
+            file_name = "### File: ",
         },
         infill_options = {
             n_predict = 100,
             stop = { "### File:" },
-            temperature = 0.8
+            temperature = 0.8,
         },
-        api_type = 'llama'
     },
     completion_buffers = 1,
     current_buffer_has_mark = false,
     buffers_sort_mru = true,
     exceeded_buffer_has_mark = true,
-    completion_delay_ms = -1, -- 2000,
+    completion_delay_ms = 2000,
     complete_only_on_eol = false,
     trimming_window = 7200,
     trimming_suffix_portion = 0.28,
@@ -125,9 +125,10 @@ local default_opts = {
     rid_prefix_newline = true,
     keymaps = {
         tab = true,
+        delete = true,
         leftright = true,
         homeend = true,
-        delete = true,
+        freeend = true,
     },
     chat_stream = true,
     chat_sep_assistant = '🤖',
@@ -140,7 +141,13 @@ end
 
 function M.setup(opts)
     for k, v in pairs(opts) do
-        default_opts[k] = v
+        if type(v) == 'table' then
+            for kk, vv in pairs(v) do
+                default_opts[k][kk] = vv
+            end
+        else
+            default_opts[k] = v
+        end
     end
 end
 
@@ -564,19 +571,6 @@ local function fetch_current_buffer(cwd, opts, cursor)
     local text = vim.api.nvim_buf_get_lines(0, line - 1, line, true)[1]
     prefix = prefix .. text:sub(1, col)
     suffix = text:sub(col + 1) .. suffix
-    if opts.trimming_window ~= 0 then
-        local nsuffix = opts.infill_marks.insertion and math.max(1, math.floor(opts.trimming_window * opts.trimming_suffix_portion)) or 0
-        local nprefix = math.max(1, opts.trimming_window - nsuffix)
-        if #prefix < nprefix then
-            nsuffix = nsuffix + (nprefix - #prefix)
-            nprefix = #prefix
-        end
-        if #suffix < nsuffix then
-            nsuffix = #suffix
-        end
-        if nprefix < #prefix then prefix = utf8_cut_fix(prefix:sub(#prefix - nprefix)) end
-        if nsuffix < #suffix then suffix = utf8_cut_fix(suffix:sub(1, nsuffix)) end
-    end
     return prefix, suffix, {line, col}, curname
 end
 
@@ -670,6 +664,23 @@ local function fetch_code(cwd, opts)
     end
 
     return curprefix, cursuffix, cursor
+end
+
+local function trim_prefix_and_suffix(prefix, suffix, opts)
+    if opts.trimming_window ~= 0 then
+        local nsuffix = opts.infill_marks.insertion and math.max(1, math.floor(opts.trimming_window * opts.trimming_suffix_portion)) or 0
+        local nprefix = math.max(1, opts.trimming_window - nsuffix)
+        if #prefix < nprefix then
+            nsuffix = nsuffix + (nprefix - #prefix)
+            nprefix = #prefix
+        end
+        if #suffix < nsuffix then
+            nsuffix = #suffix
+        end
+        if nprefix < #prefix then prefix = utf8_cut_fix(prefix:sub(#prefix - nprefix)) end
+        if nsuffix < #suffix then suffix = utf8_cut_fix(suffix:sub(1, nsuffix)) end
+    end
+    return prefix, suffix
 end
 
 local function dissmiss_hint_at_cursor(buf)
@@ -863,15 +874,14 @@ local function format_time(time)
     end
 end
 
-function M.code_completion(delay, opts)
+function M.code_completion(delay)
+    local opts = default_opts
     if delay and completion_notrigger then
         completion_notrigger = false
         return
     end
 
     if not is_bufname_ok(vim.api.nvim_buf_get_name(0)) then return end
-
-    opts = opts and vim.tbl_extend('force', default_opts, opts) or default_opts
 
     local curbuf = vim.api.nvim_get_current_buf()
     dissmiss_hint_at_cursor(curbuf)
@@ -884,6 +894,7 @@ function M.code_completion(delay, opts)
         if prefix == nil then
             return function () end
         end
+        prefix, suffix = trim_prefix_and_suffix(prefix, suffix, opts)
 
         local ridspace = 0
         local ridnewline = 0
@@ -975,9 +986,9 @@ function M.code_completion(delay, opts)
     end
 end
 
-function M.chat_completion(lines, bufnr, opts)
+function M.chat_completion(lines, bufnr)
+    local opts = default_opts
     bufnr = bufnr or vim.api.nvim_get_current_buf()
-    opts = opts and vim.tbl_extend('force', default_opts, opts) or default_opts
 
     if lines then
         assert(type(lines) == 'table' and #lines > 0)

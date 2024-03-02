@@ -88,7 +88,7 @@ function! s:EndExpr() abort
         return "\<End>"
     endif
     if !luaeval("require'genius'.completion_visible()")
-        if getcurpos()[2] != len(getline('.')) + 1
+        if !luaeval("require'genius'.get_options().keymaps.freeend") || getcurpos()[2] != len(getline('.')) + 1
             return "\<End>"
         else
             return "\<Cmd>GeniusComplete\<CR>"
@@ -134,7 +134,6 @@ if v:true
         autocmd ColorScheme,VimEnter * call s:SetStyle()
         autocmd VimEnter             * call s:MapKeys()
         autocmd VimLeave             * call s:ServerLeave()
-        " autocmd CursorHold,CursorMoved,CursorMovedI * lua require'genius'.show_server_status()
     augroup end
 else
     inoremap <C-Space> <Cmd>GeniusComplete<CR>
