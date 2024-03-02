@@ -271,6 +271,9 @@ require'genius'.setup {
         homeend = true,
         freeend = true,
     },
+    filetype_hints = {
+        gitcommit = '# Please write a memorizable commit message based on files changed:\n',
+    },
     chat_stream = true,
     chat_sep_assistant = '🤖',
     chat_sep_user = '😊',

@@ -111,6 +111,9 @@ local default_opts = {
         homeend = true,
         freeend = true,
     },
+    filetype_hints = {
+        gitcommit = '# Please write a memorizable commit message based on files changed:\n',
+    },
     chat_stream = true,
     chat_sep_assistant = '🤖',
     chat_sep_user = '😊',
@@ -598,6 +601,12 @@ local function fetch_current_buffer(cwd, opts, cursor)
     local text = vim.api.nvim_buf_get_lines(0, line - 1, line, true)[1]
     prefix = prefix .. text:sub(1, col)
     suffix = text:sub(col + 1) .. suffix
+
+    local curft = vim.bo.filetype
+    if curft and opts.filetype_hints[curft] then
+        prefix = opts.filetype_hints[curft] .. prefix
+    end
+
     return prefix, suffix, {line, col}, curname
 end
 
