@@ -118,7 +118,7 @@ local default_opts = {
         freeend = true,
     },
     filetype_hints = {
-        gitcommit = 'Please write a unique and memorizable commit message based on files changed, no comments or quotes:\n\n',
+        gitcommit = 'Please write a unique and memorizable commit message based on files changed, no comments or quotes:\n\n\n',
     },
     chat_stream = true,
     chat_sep_assistant = '🤖',
