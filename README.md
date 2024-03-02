@@ -44,7 +44,9 @@ require"genius".setup {
 }
 ```
 
-If the completion didn't shows up in time or you've setup `completion_delay_ms = -1`, you may press `<End>` at the end of a line in insert mode, to manually trigger completion.
+If the completion didn't shows up in time or you've setup `completion_delay_ms = -1`, you may press `<S-Tab>` to manually trigger AI completion in insert mode.
+
+Pressing `<End>` when cursor at the end of a line in insert mode triggers AI completion too.
 
 Also, use `:GeniusChat` to enter free chat mode in a popup window.
 
@@ -59,7 +61,8 @@ When completion is visible. You may press:
 - `<Left>` arrow to revoke a single word.
 - `<End>` to accept a whole line.
 - `<Home>` to revoke a whole line.
-- `<Del>` to regenerate a new completion.
+- `<S-Tab>` to regenerate a new completion.
+- `<Del>` to dismiss the completion.
 - Continue typing or leaving insert mode will dismiss the rest of the completion.
 
 Note these keymaps only works when the completion is visible. The default behavior when no completion is shown remains still.
@@ -72,10 +75,11 @@ If you dislike these keymaps, you may optionally disable them one by one in the 
 require"genius".setup {
     keymaps = {
         tab = false, -- tab for accept all
-        delete = false, -- <Del> for regenerating completion
+        shifttab = false, -- shift+tab for manual trigger and regenerating completion
+        delete = false, -- <Del> for dismiss completion
         leftright = false, -- arrow keys for accept/revoke words
         homeend = false, -- <Home> and <End> for lines
-        freeend = false, -- <End> at the end of line for manually trigger completion
+        freeend = false, -- <End> at the end of line for manual trigger
     },
 }
 ```
@@ -275,6 +279,7 @@ require'genius'.setup {
     rid_prefix_newline = true,
     keymaps = {
         tab = true,
+        shifttab = true,
         delete = true,
         leftright = true,
         homeend = true,

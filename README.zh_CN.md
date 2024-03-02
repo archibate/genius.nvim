@@ -44,7 +44,9 @@ require"genius".setup {
 }
 ```
 
-如果补全没有及时显示，或者您设置了 `completion_delay_ms = -1`，您也可以在插入模式中的行末按下 `<End>` 键，手动触发补全。
+如果补全没有及时显示，或者您设置了 `completion_delay_ms = -1`，您也可以按下 `<S-Tab>`，手动触发补全。
+
+在插入模式中的行末按下 `<End>` 键也可以呼出 AI 补全。
 
 此外，使用 `:GeniusChat` 命令还可以进入弹出窗口中的自由聊天模式。
 
@@ -59,7 +61,8 @@ require"genius".setup {
 - `<Left>` 箭头键撤销单个单词。
 - `<End>` 键接受整行。
 - `<Home>` 键撤销整行。
-- `<Del>` 键重新生成新的补全。
+- `<S-Tab>` 键请求重新生成新的补全。
+- `<Del>` 键关闭当前显示的补全。
 - 继续输入不同的代码或离开插入模式将取消剩余的补全。
 
 请注意，这些键映射仅在补全出现时起作用，不会影响没有补全时的默认行为。
@@ -72,12 +75,19 @@ require"genius".setup {
 require"genius".setup {
     keymaps = {
         tab = false, -- tab 键接受全部
-        delete = false, -- <Del> 重新生成补全
+        shifttab = false, -- shift+tab 用于手动触发补全和重新生成补全
+        delete = false, -- <Del> 键取消当前补全
         leftright = false, -- 箭头键接受/撤销单词
         homeend = false, -- <Home> 和 <End> 用于行
         freeend = false, -- 行末的 <End> 用于手动触发补全
     },
 }
+```
+
+如果你需要自定义键位，只需映射到 `:GeniusComplete` 命令即可。例如：
+
+```vim
+inoremap <C-Space> <Cmd>GeniusComplete<CR>
 ```
 
 # 可用后端

@@ -109,6 +109,7 @@ local default_opts = {
     rid_prefix_newline = true,
     keymaps = {
         tab = true,
+        shifttab = true,
         delete = true,
         leftright = true,
         homeend = true,

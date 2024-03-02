@@ -49,10 +49,17 @@ function! s:SetStyle() abort
 endfunction
 
 function! s:TabExpr() abort
-    if mode() !~# '^[iR]' || !luaeval("require'genius'.completion_visible()") || pumvisible()
+    if mode() !~# '^[iR]' || !luaeval("require'genius'.completion_visible()") "|| pumvisible()
         return "\t"
     endif
     return "\<Cmd>GeniusAccept\<CR>"
+endfunction
+
+function! s:ShiftTabExpr() abort
+    if mode() !~# '^[iR]' || (pumvisible() && complete_info()['selected'] != -1)
+        return "\<S-Tab>"
+    endif
+    return "\<Cmd>GeniusComplete\<CR>"
 endfunction
 
 function! s:LeftExpr() abort
@@ -101,12 +108,15 @@ function! s:DelExpr() abort
     if mode() !~# '^[iR]' || !luaeval("require'genius'.completion_visible()")
         return "\<Del>"
     endif
-    return "\<Cmd>GeniusComplete\<CR>"
+    return "\<Cmd>GeniusDismiss\<CR>"
 endfunction
 
 function! s:MapKeys() abort
     if luaeval("require'genius'.get_options().keymaps.tab")
         imap <script><silent><nowait><expr> <Tab> <SID>TabExpr()
+    endif
+    if luaeval("require'genius'.get_options().keymaps.shifttab")
+        imap <script><silent><nowait><expr> <S-Tab> <SID>ShiftTabExpr()
     endif
     if luaeval("require'genius'.get_options().keymaps.leftright")
         imap <script><silent><nowait><expr> <Left> <SID>LeftExpr()
