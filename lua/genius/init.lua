@@ -22,7 +22,7 @@ local default_opts = {
             temperature = 0.8,
         },
         infill_marks = {
-            completion = "",
+            completion = "Do code completion based on the following code. No repeat. Indentation must be correct. Be short and relevant.\n\n",
             cwd_eos = "\n",
             cwd_files = "### List of current directory:\n",
             file_content = "\n",
@@ -926,13 +926,13 @@ function M.code_completion(delay)
     local bufname = vim.api.nvim_buf_get_name(0)
     if not is_bufname_ok(bufname) then return end
 
-    local curbuf = vim.api.nvim_get_current_buf()
-    dissmiss_hint_at_cursor(curbuf)
+    M.completion_dismiss('all')
 
     if delay and opts.completion_delay_ms == -1 then
         return function () end
     end
 
+    local curbuf = vim.api.nvim_get_current_buf()
     local function begin_request()
         if not vim.api.nvim_buf_is_valid(curbuf) then return function () end end
 
@@ -1146,6 +1146,8 @@ function M.completion_dismiss(step)
                 die = suggestion_backward(suggestion, buf, 1)
             elseif step == 'word' then
                 die = suggestion_backward(suggestion, buf, find_boundary_word(suggestion[4], true))
+            elseif step == 'bigword' then
+                die = suggestion_backward(suggestion, buf, find_boundary_bigword(suggestion[4], true))
             elseif step == 'line' then
                 die = suggestion_backward(suggestion, buf, find_boundary_line(suggestion[4], true))
             else
@@ -1169,6 +1171,8 @@ function M.completion_accept(step)
             die = suggestion_advance(suggestion, buf, 1)
         elseif step == 'word' then
             die = suggestion_advance(suggestion, buf, find_boundary_word(suggestion[2]))
+        elseif step == 'bigword' then
+            die = suggestion_advance(suggestion, buf, find_boundary_bigword(suggestion[2]))
         elseif step == 'line' then
             die = suggestion_advance(suggestion, buf, find_boundary_line(suggestion[2]))
         else

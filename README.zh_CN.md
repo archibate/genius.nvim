@@ -194,7 +194,7 @@ require'genius'.setup {
             temperature = 0.8,
         },
         infill_marks = {
-            completion = "",
+            completion = "Do code completion based on the following code. No repeat. Indentation must be correct. Be short and relevant.\n\n",
             cwd_eos = "\n",
             cwd_files = "### List of current directory:\n",
             file_content = "\n",
