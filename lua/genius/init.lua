@@ -29,7 +29,6 @@ local default_opts = {
             file_eos = "\n",
             file_name = "### File: ",
             begin_above_mark = "\n### Based on the existing files listed above, do code completion for the following file:\n",
-            begin_mark = "### Do code completion for the following file:\n",
             insertion = { "", "<INSERT_HERE>", "" },
             input_price = 0.0015,
             output_price = 0.0020,
@@ -61,7 +60,6 @@ local default_opts = {
             file_eos = "<|EOT|>",
             file_name = "### File: ",
             begin_above_mark = "",
-            begin_mark = "",
             insertion = { "<｜fim▁begin｜>", "<｜fim▁hole｜>", "<｜fim▁end｜>" },
         },
         infill_options = {
@@ -89,7 +87,6 @@ local default_opts = {
             file_eos = "</s>",
             file_name = "### File: ",
             begin_above_mark = "",
-            begin_mark = "",
         },
         infill_options = {
             n_predict = 100,
@@ -676,10 +673,8 @@ local function fetch_code(cwd, opts)
             curname = escape_content(curname, opts)
             curprefix = opts.infill_marks.file_name .. curname .. opts.infill_marks.file_content .. curprefix
         end
-        if nbufs > 1 then
+        if #fullprefix ~= 0 then
             curprefix = fullprefix .. opts.infill_marks.begin_above_mark .. curprefix
-        else
-            curprefix = opts.infill_marks.begin_mark .. curprefix
         end
 
     elseif opts.single_buffer_has_mark then
