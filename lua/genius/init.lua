@@ -92,11 +92,11 @@ local default_opts = {
         },
     },
     completion_buffers = 1,
-    current_buffer_has_mark = false,
+    single_buffer_has_mark = false,
     buffers_sort_mru = true,
     exceeded_buffer_has_mark = true,
     completion_delay_ms = 2000,
-    complete_only_on_eol = true,
+    complete_only_on_eol = false,
     trimming_window = 7200,
     trimming_suffix_portion = 0.28,
     buffers_in_cwd_only = true,
@@ -506,7 +506,7 @@ end
 local namespace = vim.api.nvim_create_namespace('Genius')
 
 local function is_bufname_ok(bufname)
-    return bufname ~= '' and vim.fn.isdirectory(bufname) ~= 1 and vim.fn.filereadable(bufname) == 1
+    return bufname ~= '' -- and vim.fn.filereadable(bufname) == 1
 end
 
 local function utf8_cut_fix(text)
@@ -636,7 +636,7 @@ local function fetch_code(cwd, opts)
                 if is_bufname_ok(bufname) then
                     bufname = escape_content(bufname, opts)
                     if exceeded then
-                        local code = opts.infill_marks.file_name .. bufname .. opts.infill_marks.file_content .. '(content omitted)\n' .. opts.infill_marks.file_eos
+                        local code = opts.infill_marks.file_name .. bufname .. opts.infill_marks.file_content .. opts.infill_marks.file_eos
                         fullprefix = fullprefix .. code
                     else
                         local is_inside_cwd = vim.startswith(bufname, cwd)
@@ -657,13 +657,13 @@ local function fetch_code(cwd, opts)
                 end
             end
         end
-        if nbufs > 1 then
+        if nbufs > 1 or opts.single_buffer_has_mark then
             curname = escape_content(curname, opts)
             curprefix = opts.infill_marks.file_name .. curname .. opts.infill_marks.file_content .. curprefix
         end
         curprefix = fullprefix .. curprefix
 
-    elseif opts.current_buffer_has_mark then
+    elseif opts.single_buffer_has_mark then
         curname = escape_content(curname, opts)
         curprefix = opts.infill_marks.file_name .. curname .. opts.infill_marks.file_content .. curprefix
     end
@@ -908,7 +908,8 @@ function M.code_completion(delay)
         return
     end
 
-    if not is_bufname_ok(vim.api.nvim_buf_get_name(0)) then return end
+    local bufname = vim.api.nvim_buf_get_name(0)
+    if not is_bufname_ok(bufname) then return end
 
     local curbuf = vim.api.nvim_get_current_buf()
     dissmiss_hint_at_cursor(curbuf)
@@ -949,17 +950,15 @@ function M.code_completion(delay)
             end
         end
         local canceler
-        local copts = opts['config_' .. opts.api_type]
-        assert(copts, 'no config found for ' .. opts.api_type)
         if opts.api_type == 'openai' then
             -- canceler = request_chat({role = 'user', content = prompt}, -1, opts, opts.infill_options, on_complete, false)
             local prompt = opts.infill_marks.completion .. prefix
             -- dump(prompt .. '<INSERT>' .. suffix)
-            canceler = request_legacy_completion(prompt, suffix, -1, copts, copts.infill_options, on_complete, false, ridspace, ridnewline)
+            canceler = request_legacy_completion(prompt, suffix, -1, opts, opts.infill_options, on_complete, false, ridspace, ridnewline)
         else
             local prompt = apply_infill_template(prefix, suffix, opts)
             -- dump(prompt)
-            canceler = request_completion(prompt, -1, copts, copts.infill_options, on_complete, false, ridspace, ridnewline)
+            canceler = request_completion(prompt, -1, opts, opts.infill_options, on_complete, false, ridspace, ridnewline)
         end
         current_suggestion[curbuf] = {'REQUESTING', canceler}
         return canceler
@@ -985,10 +984,12 @@ function M.code_completion(delay)
             end
         end
 
-        local cursor = vim.api.nvim_win_get_cursor(0)
-        local maxcol = #vim.api.nvim_buf_get_lines(0, cursor[1] - 1, cursor[1], true)[1]
-        if cursor[2] ~= maxcol then
-            return function () end
+        if opts.complete_only_on_eol then
+            local cursor = vim.api.nvim_win_get_cursor(0)
+            local maxcol = #vim.api.nvim_buf_get_lines(0, cursor[1] - 1, cursor[1], true)[1]
+            if cursor[2] ~= maxcol then
+                return function () end
+            end
         end
 
         local timer = vim.loop.new_timer()

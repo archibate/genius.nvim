@@ -159,9 +159,9 @@ make LLAMA_CUBLAS=1 LLAMA_FAST=1 -j 8 server
 
 使用 Mistral 模型与 DeepSeek Coder 的过程大致相同，因为他们都可以通过 llama.cpp 提供服务，只需指定 `api_type = 'mistral'` 即可。
 
-## 完整设置
+# 完整配置
 
-以下是此插件的默认设置：
+以下是此插件的默认配置：
 
 ```lua
 require'genius'.setup {
@@ -251,8 +251,8 @@ require'genius'.setup {
             temperature = 0.8,
         },
     },
-    completion_buffers = 1,
-    current_buffer_has_mark = false,
+    completion_buffers = 1, -- 设为 3 可以把最近使用过的两个缓冲区也作为补全的依据，设为 1 则只使用当前正在编辑的缓冲区
+    single_buffer_has_mark = false,
     buffers_sort_mru = true,
     exceeded_buffer_has_mark = true,
     completion_delay_ms = 2000,
@@ -274,9 +274,8 @@ require'genius'.setup {
     chat_stream = true,
     chat_sep_assistant = '🤖',
     chat_sep_user = '😊',
+    report_error = true, -- 设为 false 可以禁用报错
 }
 ```
-
-## 遇到问题？
 
 如果您有任何问题，请在 [GitHub issues](https://github.com/archibate/genius/issues) 页面中告诉我，感谢您的支持！

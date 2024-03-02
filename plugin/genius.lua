@@ -1,39 +1,39 @@
-local auto_drive = require'genius'
+local genius = require'genius'
 
 vim.api.nvim_create_user_command('GeniusChat', function ()
-    auto_drive.open_chat_window()
+    genius.open_chat_window()
 end, {})
 
 vim.api.nvim_create_user_command('GeniusToggle', function ()
-    auto_drive.toggle_completion()
+    genius.toggle_completion()
 end, {})
 
 vim.api.nvim_create_user_command('GeniusComplete', function ()
-    auto_drive.code_completion()
+    genius.code_completion()
 end, {})
 
 vim.api.nvim_create_user_command('GeniusHold', function ()
-    auto_drive.code_completion(true)
+    genius.code_completion(true)
 end, {})
 
 vim.api.nvim_create_user_command('GeniusAccept', function (opts)
-    if auto_drive.completion_accept(opts.bang and 'word' or 'all') then
-        auto_drive.code_completion()
+    if genius.completion_accept(opts.bang and 'word' or 'all') then
+        genius.code_completion()
     end
 end, {bang = true})
 
 vim.api.nvim_create_user_command('GeniusDismiss', function (opts)
-    auto_drive.completion_dismiss(opts.bang and 'word' or 'all')
+    genius.completion_dismiss(opts.bang and 'word' or 'all')
 end, {bang = true})
 
 vim.api.nvim_create_user_command('GeniusAcceptLine', function (opts)
-    if auto_drive.completion_accept(opts.bang and 'char' or 'line') then
-        auto_drive.code_completion()
+    if genius.completion_accept(opts.bang and 'char' or 'line') then
+        genius.code_completion()
     end
 end, {bang = true})
 
 vim.api.nvim_create_user_command('GeniusDismissLine', function (opts)
-    auto_drive.completion_dismiss(opts.bang and 'char' or 'line')
+    genius.completion_dismiss(opts.bang and 'char' or 'line')
 end, {bang = true})
 
 vim.cmd [[

@@ -159,7 +159,7 @@ Start the server before you can use this plugin:
 
 Using the Mistral backend is roughly the same as DeepSeek Coder, as it can be also served on llama.cpp, just use `api_type = 'mistral'` instead.
 
-## Full Setup
+# Full Setup
 
 Below is the default setup for this plugin:
 
@@ -251,12 +251,12 @@ require'genius'.setup {
             temperature = 0.8,
         },
     },
-    completion_buffers = 1,
-    current_buffer_has_mark = false,
+    completion_buffers = 1, -- setting to 3 include 2 recently used buffer into the prompt, 1 for only using the current editing buffer
+    single_buffer_has_mark = false,
     buffers_sort_mru = true,
     exceeded_buffer_has_mark = true,
     completion_delay_ms = 2000,
-    complete_only_on_eol = true,
+    complete_only_on_eol = false,
     trimming_window = 7200,
     trimming_suffix_portion = 0.28,
     buffers_in_cwd_only = true,
@@ -277,7 +277,5 @@ require'genius'.setup {
     report_error = true, -- set this to false for disable error notification.
 }
 ```
-
-## Any Issues?
 
 If you encounter any trouble, let me know in the [GitHub issues](https://github.com/archibate/genius/issues), thanks for your support!
