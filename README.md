@@ -1,6 +1,6 @@
 # genius.nvim
 
-Blazing fast 🚀 code completion in NeoVim powered by 🤖 GPT (`gpt-3.5-turbo-instruct` namely).
+Blazing fast 🚀 code completion in NeoVim powered by 🤖 GPT-3.5-Turbo!
 
 ## Installation
 
@@ -15,9 +15,16 @@ use {
     },
     config = function()
         require'genius'.setup {
-            -- In order to use genius.nvim with GPT backend. You may obtain an API key from OpenAI: https://platform.openai.com/account/api-keys
-            -- Either set the environment variable OPENAI_API_KEY in .bashrc, or set in the setup options here:
-            api_key = os.getenv("OPENAI_API_KEY"),
+            -- This plugin supports many backends, openai backend is the default:
+            api_type = 'openai',
+            -- You may obtain an API key from OpenAI as long as you have an account: https://platform.openai.com/account/api-keys
+            -- Either set the environment variable OPENAI_API_KEY in .bashrc, or set api_key option in the setup here:
+            config_openai = {
+                api_key = os.getenv("OPENAI_API_KEY"),
+            },
+            -- Otherwise, you may run DeepSeek-Coder locally instead:
+            -- api_type = 'deepseek',
+            -- See sections below for detailed instructions on setting up this model.
         }
     end,
 }
@@ -55,7 +62,7 @@ When completion is visible. You may press:
 - `<Del>` to regenerate a new completion.
 - Continue typing or leaving insert mode will dismiss the rest of the completion.
 
-Note these keymaps only works when the completion is visible.
+Note these keymaps only works when the completion is visible. The default behavior when no completion is shown remains still.
 
 [TODO: image here]
 
@@ -150,7 +157,7 @@ Start the server before you can use this plugin:
 
 ## Mistral
 
-Using the Mistral backend is roughly the same as DeepSeek Coder, as it can be also served on llama.cpp, just replace `api_type = 'mistral'` instead.
+Using the Mistral backend is roughly the same as DeepSeek Coder, as it can be also served on llama.cpp, just use `api_type = 'mistral'` instead.
 
 ## Full Setup
 
@@ -249,7 +256,7 @@ require'genius'.setup {
     buffers_sort_mru = true,
     exceeded_buffer_has_mark = true,
     completion_delay_ms = 2000,
-    complete_only_on_eol = false,
+    complete_only_on_eol = true,
     trimming_window = 7200,
     trimming_suffix_portion = 0.28,
     buffers_in_cwd_only = true,
@@ -267,6 +274,7 @@ require'genius'.setup {
     chat_stream = true,
     chat_sep_assistant = '🤖',
     chat_sep_user = '😊',
+    report_error = true, -- set this to false for disable error notification.
 }
 ```
 

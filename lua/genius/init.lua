@@ -4,25 +4,6 @@ local curl = require 'plenary.curl'
 local Popup = require("nui.popup")
 local Layout = require("nui.layout")
 
-local function P(x)
-    if type(x) ~= 'string' then
-        x = vim.inspect(x)
-    end
-    vim.notify(x)
-end
-
-local function S(x)
-    if type(x) ~= 'string' then
-        x = vim.inspect(x)
-    end
-    local file = io.open("/tmp/neovim.log", "a")
-    if file then
-        file:write('\n=======\n')
-        file:write(x)
-        file:close()
-    end
-end
-
 local default_opts = {
     api_type = 'openai',
     config_openai = {
@@ -115,7 +96,7 @@ local default_opts = {
     buffers_sort_mru = true,
     exceeded_buffer_has_mark = true,
     completion_delay_ms = 2000,
-    complete_only_on_eol = false,
+    complete_only_on_eol = true,
     trimming_window = 7200,
     trimming_suffix_portion = 0.28,
     buffers_in_cwd_only = true,
@@ -133,7 +114,38 @@ local default_opts = {
     chat_stream = true,
     chat_sep_assistant = '🤖',
     chat_sep_user = '😊',
+    report_error = true,
 }
+
+setmetatable(default_opts, {
+    __index = function (t, k)
+        local v = rawget(t, k)
+        if v ~= nil then return v end
+        local a = rawget(t, 'api_type')
+        if type(a) ~= 'string' then return nil end
+        local cfg = rawget(t, 'config_' .. a)
+        if cfg == nil then return nil end
+        return cfg[k]
+    end,
+})
+
+local function report(msg)
+    if default_opts.report_error then
+        vim.notify(msg, vim.log.levels.ERROR, {title = 'Genius'})
+    end
+end
+
+local function dump(x)
+    if type(x) ~= 'string' then
+        x = vim.inspect(x)
+    end
+    local file = io.open("/tmp/neovim.log", "a")
+    if file then
+        file:write('\n=======\n')
+        file:write(x)
+        file:close()
+    end
+end
 
 function M.get_options()
     return default_opts
@@ -159,9 +171,6 @@ local function request_http(base_url, uri, data, callback, stream, authorization
     if not plugin_enabled then
         return function () end
     end
-    local function on_error(msg)
-        vim.notify(msg, vim.log.levels.ERROR, {title = 'Genius'})
-    end
     local headers = {
         ['Content-type'] = 'application/json',
     }
@@ -177,7 +186,7 @@ local function request_http(base_url, uri, data, callback, stream, authorization
             on_error = vim.schedule_wrap(function (res)
                 if canceled then return end
                 local msg = string.format("--- CURL ERROR %d ---\n%s", res.exit, res.message)
-                return on_error(msg)
+                return report(msg)
             end),
         }
         if stream then
@@ -186,7 +195,7 @@ local function request_http(base_url, uri, data, callback, stream, authorization
                 if canceled then return end
                 if err then
                     local msg = string.format("--- CURL STREAM ERROR ---\n%s", err)
-                    return on_error(msg)
+                    return report(msg)
                 end
                 if vim.startswith(res, 'data: ') then
                     local body = res:sub(7)
@@ -194,7 +203,7 @@ local function request_http(base_url, uri, data, callback, stream, authorization
                     local success, result = pcall(vim.fn.json_decode, body)
                     if not success then
                         local msg = string.format("--- JSON LINE DECODE FAILURE ---\n%s", body)
-                        return on_error(msg)
+                        return report(msg)
                     end
                     local dt = vim.fn.reltimefloat(vim.fn.reltime(t0))
                     return callback(result, dt)
@@ -207,12 +216,12 @@ local function request_http(base_url, uri, data, callback, stream, authorization
                 if canceled then return end
                 if res.status ~= 200 then
                     local msg = string.format("--- HTTP ERROR %d ---\n%s", res.status, res.body)
-                    return on_error(msg)
+                    return report(msg)
                 end
                 local success, result = pcall(vim.fn.json_decode, res.body)
                 if not success then
                     local msg = string.format("--- JSON DECODE FAILURE ---\n%s", res.body)
-                    return on_error(msg)
+                    return report(msg)
                 end
                 local dt = vim.fn.reltimefloat(vim.fn.reltime(t0))
                 return callback(result, dt)
@@ -221,7 +230,7 @@ local function request_http(base_url, uri, data, callback, stream, authorization
         local success, job = pcall(curl.post, base_url .. uri, opts)
         -- vim.notify(vim.inspect(job))
         if not success then
-            on_error('curl.post invocation failed')
+            report('curl.post invocation failed')
             return function () end
         end
         return function ()
@@ -238,23 +247,41 @@ local function request_http(base_url, uri, data, callback, stream, authorization
     elseif plugin_ready == nil then
         local canceler = nil
         local canceled = false
-        curl.get(base_url .. '/', {
-            on_error = vim.schedule_wrap(function ()
-                plugin_ready = false
-                vim.notify('completion server not ready', vim.log.levels.WARN, {title = 'Genius'})
-            end),
-            callback = vim.schedule_wrap(function (res)
-                -- if res.status ~= 200 then
-                --     plugin_ready = false
-                --     vim.notify('plugin not ready', vim.log.levels.WARN, {title = 'Genius'})
-                -- else
-                vim.notify('completion server ready', vim.log.levels.INFO, {title = 'Genius'})
-                plugin_ready = true
-                if canceled then return end
-                canceler = begin_request()
-                -- end
-            end),
-        })
+        if string.match(uri, '^/v1/') then
+            curl.get(base_url .. '/v1/models', {
+                on_error = vim.schedule_wrap(function ()
+                    plugin_ready = false
+                    report('completion server not ready (failed to connect)')
+                end),
+                callback = vim.schedule_wrap(function (res)
+                    if res.status ~= 200 then
+                        plugin_ready = false
+                        if res.status == 401 then
+                            report('completion server not ready (status 401, invalid API key)')
+                        else
+                            report('completion server not ready (status ' .. res.status .. ')')
+                        end
+                    else
+                        plugin_ready = true
+                        if canceled then return end
+                        canceler = begin_request()
+                    end
+                end),
+            })
+        else
+            curl.get(base_url .. '/', {
+                on_error = vim.schedule_wrap(function ()
+                    plugin_ready = false
+                    report('completion server not ready (failed to connect)')
+                end),
+                callback = vim.schedule_wrap(function (res)
+                    plugin_ready = true
+                    if canceled then return end
+                    canceler = begin_request()
+                    -- end
+                end),
+            })
+        end
         return function ()
             canceled = true
             if canceler then
@@ -341,7 +368,7 @@ local function request_legacy_completion(prompt, suffix, seed, opts, options, ca
         assert(res ~= nil, 'invalid server response: ' .. vim.inspect(res))
         assert(type(res) == 'table')
         if res.error ~= nil and res.error.message ~= nil then
-            vim.notify('server error: ' .. res.error.message, vim.log.levels.ERROR, {title = 'Genius'})
+            report('server error: ' .. res.error.message)
             return
         end
         assert(type(res.choices) == 'table', 'invalid server response: ' .. vim.inspect(res))
@@ -922,15 +949,17 @@ function M.code_completion(delay)
             end
         end
         local canceler
+        local copts = opts['config_' .. opts.api_type]
+        assert(copts, 'no config found for ' .. opts.api_type)
         if opts.api_type == 'openai' then
             -- canceler = request_chat({role = 'user', content = prompt}, -1, opts, opts.infill_options, on_complete, false)
             local prompt = opts.infill_marks.completion .. prefix
-            S(prompt .. '<INSERT>' .. suffix)
-            canceler = request_legacy_completion(prompt, suffix, -1, opts, opts.infill_options, on_complete, false, ridspace, ridnewline)
+            -- dump(prompt .. '<INSERT>' .. suffix)
+            canceler = request_legacy_completion(prompt, suffix, -1, copts, copts.infill_options, on_complete, false, ridspace, ridnewline)
         else
             local prompt = apply_infill_template(prefix, suffix, opts)
-            S(prompt)
-            canceler = request_completion(prompt, -1, opts, opts.infill_options, on_complete, false, ridspace, ridnewline)
+            -- dump(prompt)
+            canceler = request_completion(prompt, -1, copts, copts.infill_options, on_complete, false, ridspace, ridnewline)
         end
         current_suggestion[curbuf] = {'REQUESTING', canceler}
         return canceler
