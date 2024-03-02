@@ -112,7 +112,7 @@ local default_opts = {
         freeend = true,
     },
     filetype_hints = {
-        gitcommit = '# Please write a memorizable commit message based on files changed:\n',
+        gitcommit = 'Please write a unique and memorizable commit message based on files changed, no quotes (""), no comments (#), no newlines:\n\n',
     },
     chat_stream = true,
     chat_sep_assistant = '🤖',
@@ -962,11 +962,11 @@ function M.code_completion(delay)
         if opts.api_type == 'openai' then
             -- canceler = request_chat({role = 'user', content = prompt}, -1, opts, opts.infill_options, on_complete, false)
             local prompt = opts.infill_marks.completion .. prefix
-            -- dump(prompt .. '<INSERT>' .. suffix)
+            dump(prompt .. '<INSERT>' .. suffix)
             canceler = request_legacy_completion(prompt, suffix, -1, opts, opts.infill_options, on_complete, false, ridspace, ridnewline)
         else
             local prompt = apply_infill_template(prefix, suffix, opts)
-            -- dump(prompt)
+            dump(prompt)
             canceler = request_completion(prompt, -1, opts, opts.infill_options, on_complete, false, ridspace, ridnewline)
         end
         current_suggestion[curbuf] = {'REQUESTING', canceler}
