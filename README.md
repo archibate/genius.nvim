@@ -2,7 +2,7 @@
 
 [English](README.md) | [简体中文](README.zh_CN.md)
 
-Blazing fast 🚀 code completion in NeoVim powered by 🤖 GPT-3.5-Turbo!
+Blazing fast 🚀 code completion in NeoVim!
 
 ## Installation
 
@@ -18,14 +18,14 @@ use {
     config = function()
         require'genius'.setup {
             -- This plugin supports many backends, openai backend is the default:
-            api_type = 'openai',
+            default_bot = 'openai',
             -- You may obtain an API key from OpenAI as long as you have an account: https://platform.openai.com/account/api-keys
             -- Either set the environment variable OPENAI_API_KEY in .bashrc, or set api_key option in the setup here:
             config_openai = {
                 api_key = os.getenv("OPENAI_API_KEY"),
             },
             -- Otherwise, you may run DeepSeek-Coder locally instead:
-            -- api_type = 'deepseek',
+            -- default_bot = 'deepseek',
             -- See sections below for detailed instructions on setting up this model.
         }
     end,
@@ -170,7 +170,7 @@ Start the server before you can use this plugin:
 
 ## Mistral
 
-Using the Mistral backend is roughly the same as DeepSeek Coder, as it can be also served on llama.cpp, just use `api_type = 'mistral'` instead.
+Using the Mistral backend is roughly the same as DeepSeek Coder, as it can be also served on llama.cpp, just use `default_bot = 'mistral'` instead.
 
 ## MiniMax API
 
@@ -282,7 +282,7 @@ require'genius'.setup {
     completion_delay_ms = 2000,
     complete_only_on_eol = false,
     trimming_window = 7200,
-    trimming_suffix_portion = 0.28,
+    trimming_suffix_portion = 0.3,
     buffers_in_cwd_only = true,
     list_cwd_files = false,
     escape_special_tokens = true,

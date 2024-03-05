@@ -2,7 +2,7 @@
 
 [English](README.md) | [简体中文](README.zh_CN.md)
 
-小彭老师自主研发的一款由 🤖 GPT 驱动的 NeoVim 极速代码补全 🚀
+小彭老师自主研发的一款 NeoVim 极速代码补全 🚀
 
 ## 安装
 
@@ -18,14 +18,14 @@ use {
     config = function()
         require'genius'.setup {
             -- 本插件支持多个后端，默认是 openai 后端：
-            api_type = 'openai',
+            default_bot = 'openai',
             -- 您可以从 OpenAI 获取 API 密钥（如果您有账号的话）：https://platform.openai.com/account/api-keys
             -- 要么在 .bashrc 中设置环境变量 OPENAI_API_KEY，要么在此处设置 api_key 选项：
             config_openai = {
                 api_key = os.getenv("OPENAI_API_KEY"),
             },
             -- 否则，您也可以使用 DeepSeek-Coder，在本地运行代码补全模型：
-            -- api_type = 'deepseek',
+            -- default_bot = 'deepseek',
             -- 该模型安装与配置方法，详见后面的章节。
         }
     end,
@@ -170,7 +170,7 @@ make LLAMA_CUBLAS=1 LLAMA_FAST=1 -j 8 server
 
 ## Mistral
 
-使用 Mistral 模型与 DeepSeek Coder 的过程大致相同，因为他们都可以通过 llama.cpp 提供服务，只需指定 `api_type = 'mistral'` 即可。
+使用 Mistral 模型与 DeepSeek Coder 的过程大致相同，因为他们都可以通过 llama.cpp 提供服务，只需指定 `default_bot = 'mistral'` 即可。
 
 ## MiniMax 开放平台
 
@@ -281,7 +281,7 @@ require'genius'.setup {
     completion_delay_ms = 2000,
     complete_only_on_eol = false,
     trimming_window = 7200,
-    trimming_suffix_portion = 0.28,
+    trimming_suffix_portion = 0.3,
     buffers_in_cwd_only = true,
     list_cwd_files = false,
     escape_special_tokens = true,
