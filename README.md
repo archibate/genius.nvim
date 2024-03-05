@@ -122,8 +122,9 @@ This plugin can also be customized to use the [Deepseek Coder](https://github.co
 
 ```lua
 require'genius'.setup {
-    api_type = 'deepseek',
+    default_bot = 'deepseek',
     config_deekseek = {
+        api_type = 'llama_cpp',
         base_url = "http://127.0.0.1:8080",  -- 🦙 llama.cpp server address
         infill_options = {
             n_predict = 100, -- number of tokens to generate in a single completion
@@ -171,47 +172,37 @@ Start the server before you can use this plugin:
 
 Using the Mistral backend is roughly the same as DeepSeek Coder, as it can be also served on llama.cpp, just use `api_type = 'mistral'` instead.
 
+## MiniMax API
+
+TODO: introduce this
+
 # Full Setup
 
 Below is the default setup for this plugin:
 
 ```lua
 require'genius'.setup {
-    api_type = 'openai',
+    default_bot = 'openai',
     config_openai = {
+        api_type = 'openai',
         api_key = os.getenv("OPENAI_API_KEY"),
         base_url = "https://api.openai.com",
-        chat_marks = {
-            inst_prefix_bos = "### User:\n",
-            inst_prefix_eos = "\n### User:\n",
-            inst_suffix = "\n### Assistant:\n",
-            input_price = 0.0005,
-            output_price = 0.0015,
-        },
         chat_options = {
-            max_tokens = 512,
+            max_tokens = 1024,
             model = "gpt-3.5-turbo",
-            temperature = 0.8,
+            temperature = 0.5,
         },
         infill_marks = {
             completion = "Do code completion based on the following code. No repeat. Indentation must be correct. Be short and relevant.\n\n",
-            cwd_eos = "\n",
-            cwd_files = "### List of current directory:\n",
-            file_content = "\n",
-            file_eos = "\n",
-            file_name = "### File: ",
-            begin_above_mark = "\n### Based on the existing files listed above, do code completion for the following file:\n",
-            insertion = { "", "<INSERT_HERE>", "" },
-            input_price = 0.0015,
-            output_price = 0.0020,
         },
         infill_options = {
             max_tokens = 100,
             model = "gpt-3.5-turbo-instruct",
-            temperature = 0.8,
+            temperature = 0.5,
         },
     },
     config_deepseek = {
+        api_type = 'llama_cpp',
         base_url = "http://127.0.0.1:8080",
         chat_marks = {
             inst_prefix_bos = "Expert Q&A\nQuestion: ",
@@ -221,25 +212,22 @@ require'genius'.setup {
         chat_options = {
             n_predict = -1,
             stop = { "\nQuestion:" },
-            temperature = 0.8,
+            temperature = 0.5,
         },
         escape_list = { { "<｜([%l▁]+)｜>", "<|%1|>" }, { "<|(%u+)|>", "<｜%1｜>" } },
         infill_marks = {
-            completion = "",
-            cwd_eos = "<|EOT|>",
-            cwd_files = "### List of current directory:\n",
-            file_content = "\n",
-            file_eos = "<|EOT|>",
-            file_name = "### File: ",
-            begin_above_mark = "",
-            insertion = { "<｜fim▁begin｜>", "<｜fim▁hole｜>", "<｜fim▁end｜>" },
+            may_no_suffix = false,
+            prefix = "<｜fim▁begin｜>",
+            suffix = "<｜fim▁hole｜>",
+            middle = "<｜fim▁end｜>",
         },
         infill_options = {
             n_predict = 100,
-            temperature = 0.8,
+            temperature = 0.5,
         },
     },
     config_mistral = {
+        api_type = 'llama_cpp',
         base_url = "http://127.0.0.1:8080",
         chat_marks = {
             inst_prefix_bos = "<s>[INST] ",
@@ -248,24 +236,45 @@ require'genius'.setup {
         },
         chat_options = {
             n_predict = -1,
-            temperature = 0.8,
+            temperature = 0.5,
         },
         escape_list = { { "</?[su]n?k?>", string.upper }, { "<0x[0-9A-F][0-9A-F]>", string.upper } },
         infill_marks = {
             completion = "Do code completion based on the following code. No repeat. Indentation must be correct. Be short and relevant.\n\n",
-            cwd_eos = "</s>",
-            cwd_files = "### List of current directory:\n",
-            file_content = "\n",
-            file_eos = "</s>",
-            file_name = "### File: ",
-            begin_above_mark = "",
         },
         infill_options = {
             n_predict = 100,
             stop = { "### File:" },
-            temperature = 0.8,
+            temperature = 0.5,
         },
     },
+    config_minimax = {
+        api_type = 'minimax',
+        group_id = os.getenv("MINIMAX_GROUP_ID"),
+        api_key = os.getenv("MINIMAX_API_KEY"),
+        base_url = 'https://api.minimax.chat',
+        chat_marks = {
+            instruction = "一个代码助手，帮助用户编写代码，解决编程问题。",
+        },
+        chat_options = {
+            model = "abab6-chat",
+            tokens_to_generate = 1024,
+            temperature = 0.5,
+        },
+        infill_marks = {
+            may_no_suffix = false,
+            instruction = "一个代码补全机器人，针对用户输入的代码，输出补全的结果，不要解释。",
+            prefix = '<CURSOR>处应该插入什么内容？',
+            suffix = '<CURSOR>',
+            middle = '',
+        },
+        infill_options = {
+            model = "abab6-chat",
+            tokens_to_generate = 100,
+            temperature = 0.5,
+        },
+    },
+,
     completion_buffers = 1, -- setting to 3 include 2 recently used buffer into the prompt, 1 for only using the current editing buffer
     single_buffer_has_mark = false,
     buffers_sort_mru = true,

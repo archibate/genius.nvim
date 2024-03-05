@@ -186,3 +186,5 @@ function M.find_boundary_line(s, rev)
     if rev then s = s:reverse() end
     return (s:find('\n', 2) or #s + 1) - 1
 end
+
+return M

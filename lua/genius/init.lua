@@ -7,9 +7,8 @@ local opts = require 'genius.config'
 local mark = require 'genius.mark'
 local buffer = require 'genius.buffer'
 local utf8 = require 'genius.utf8'
-local api = require 'genius.api'
-local utils = require 'genius.utils'
-local template = require 'genius.template'
+local bots = require 'genius.bots'
+local chatml = require 'genius.chatml'
 
 function M.get_options()
     return opts
@@ -128,42 +127,30 @@ function M.code_completion(delay)
         end
         prefix, suffix = utf8.trim_prefix_and_suffix(prefix, suffix, opts)
 
-        local ridspace = 0
-        local ridnewline = 0
-        -- if opts.api_type ~= 'openai' then
-            if opts.rid_prefix_space then
-                while #prefix > 0 and prefix:byte(-1) == 32 do
-                    prefix = prefix:sub(1, -2)
-                    ridspace = ridspace + 1
-                end
-            end
-            if opts.rid_prefix_newline then
-                while #prefix > 0 and prefix:byte(-1) == 10 do
-                    prefix = prefix:sub(1, -2)
-                    ridnewline = ridnewline + 1
-                end
-            end
-        -- end
+        local ridspace, ridnewline
+        prefix, ridspace, ridnewline = utf8.count_space_nls(prefix, opts.rid_prefix_space, opts.rid_prefix_newline)
 
         local function on_complete(result, time)
             if not vim.api.nvim_buf_is_valid(curbuf) then return end
+            result = utf8.rid_space_nls(result, ridspace, ridnewline)
             local sugguestion = state.current_suggestion[curbuf]
             if sugguestion ~= nil and sugguestion[1] == 'REQUESTING' then
                 state.current_suggestion[curbuf] = {'FINISHED', result, cursor, '', {}}
                 mark.show_hint_at_cursor(result, cursor, curbuf, format_time(time))
             end
         end
-        local canceler
-        if opts.api_type == 'openai' then
-            -- canceler = request_chat({role = 'user', content = prompt}, -1, opts, opts.infill_options, on_complete, false)
-            local prompt = opts.infill_marks.completion .. prefix
-            utils.dump(prompt .. '<INSERT>' .. suffix)
-            canceler = api.request_legacy_completion(prompt, suffix, -1, opts, opts.infill_options, on_complete, false, ridspace, ridnewline)
-        else
-            local prompt = template.apply_infill_template(prefix, suffix, opts)
-            utils.dump(prompt)
-            canceler = api.request_completion(prompt, -1, opts, opts.infill_options, on_complete, false, ridspace, ridnewline)
-        end
+        local bot = bots.get_bot()
+        local canceler = bot.on_complete(prefix, suffix, on_complete, opts, ridspace, ridnewline)
+        -- if opts.api_type == 'openai' then
+        --     -- canceler = request_chat({role = 'user', content = prompt}, -1, opts, opts.infill_options, on_complete, false)
+        --     local prompt = opts.infill_marks.completion .. prefix
+        --     utils.dump(prompt .. '<INSERT>' .. suffix)
+        --     canceler = api.request_legacy_completion(prompt, suffix, -1, opts, opts.infill_options, on_complete, false, ridspace, ridnewline)
+        -- else
+        --     local prompt = template.apply_infill_template(prefix, suffix, opts)
+        --     utils.dump(prompt)
+        --     canceler = api.request_completion(prompt, -1, opts, opts.infill_options, on_complete, false, ridspace, ridnewline)
+        -- end
         state.current_suggestion[curbuf] = {'REQUESTING', canceler}
         return canceler
     end
@@ -201,24 +188,29 @@ function M.code_completion(delay)
             return
         end
 
-        local timer = vim.loop.new_timer()
-        local canceler = function ()
-            timer:stop()
-            if not timer:is_closing() then
-                timer:close()
-            end
-        end
-        state.current_suggestion[curbuf] = {'WAITING', canceler}
-
+        local canceler
         if opts.completion_delay_ms == 0 then
             canceler = begin_request()
+            state.current_suggestion[curbuf] = {'WAITING', canceler}
         else
+            local timer = vim.loop.new_timer()
+            local req_canceler = nil
+            canceler = function ()
+                if req_canceler then
+                    return req_canceler()
+                end
+                timer:stop()
+                if not timer:is_closing() then
+                    timer:close()
+                end
+            end
+            state.current_suggestion[curbuf] = {'WAITING', canceler}
             timer:start(opts.completion_delay_ms, 0, vim.schedule_wrap(function ()
                 timer:stop()
                 if not timer:is_closing() then
                     timer:close()
                 end
-                canceler = begin_request()
+                req_canceler = begin_request()
             end))
         end
         return canceler
@@ -243,13 +235,15 @@ function M.chat_completion(lines, bufnr)
     end
 
     local text = buffer.get_buffer_text(bufnr)
-    if opts.api_type == 'openai' then
-        local messages = template.parse_chat_template(text, opts)
-        return api.request_chat(messages, -1, opts, opts.chat_options, on_stream, opts.chat_stream)
-    else
-        text = template.apply_chat_template(text, opts)
-        return api.request_completion(text, -1, opts, opts.chat_options, on_stream, opts.chat_stream, 1, 0)
-    end
+    local messages = chatml.parse_chat_template(text, opts)
+    local bot = bots.get_bot()
+    return bot.on_chat(messages, on_stream, opts)
+    -- if opts.api_type == 'openai' then
+    --     return api.request_chat(messages, -1, opts, opts.chat_options, on_stream, opts.chat_stream)
+    -- else
+    --     text = template.apply_chat_template(text, opts)
+    --     return api.request_completion(text, -1, opts, opts.chat_options, on_stream, opts.chat_stream, 1, 0)
+    -- end
 end
 
 function M.completion_dismiss(step)
@@ -269,7 +263,7 @@ function M.completion_dismiss(step)
             elseif step == 'line' then
                 die = mark.suggestion_backward(suggestion, buf, mark.find_boundary_line(suggestion[4], true))
             else
-                assert(step == 'all', 'invalid step specified: ' .. vim.inspect(step))
+                assert(step == 'all')
                 die = true
             end
             if die then
@@ -294,7 +288,7 @@ function M.completion_accept(step)
         elseif step == 'line' then
             die = mark.suggestion_advance(suggestion, buf, mark.find_boundary_line(suggestion[2]))
         else
-            assert(step == 'all', 'invalid step specified: ' .. vim.inspect(step))
+            assert(step == 'all')
             mark.insert_at_cursor(suggestion[2], suggestion[3], buf)
             state.current_suggestion[buf] = nil
             mark.dissmiss_hint_at_cursor(buf)

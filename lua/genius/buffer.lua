@@ -74,7 +74,7 @@ function M.fetch_code(cwd, opts)
                 if M.is_bufname_ok(bufname) then
                     -- bufname = escape_content(bufname, opts)
                     if exceeded then
-                        local code = opts.infill_marks.file_name .. bufname .. opts.infill_marks.file_content .. opts.infill_marks.file_eos
+                        local code = opts.marks.file_name .. bufname .. opts.marks.file_content .. opts.marks.file_eos
                         fullprefix = fullprefix .. code
                     else
                         local is_inside_cwd = vim.startswith(bufname, cwd)
@@ -88,7 +88,7 @@ function M.fetch_code(cwd, opts)
                                 code = code .. text .. '\n'
                             end
                             -- code = escape_content(code, opts)
-                            code = opts.infill_marks.file_name .. bufname .. opts.infill_marks.file_content .. code .. opts.infill_marks.file_eos
+                            code = opts.marks.file_name .. bufname .. opts.marks.file_content .. code .. opts.marks.file_eos
                             fullprefix = fullprefix .. code
                         end
                     end
@@ -97,21 +97,21 @@ function M.fetch_code(cwd, opts)
         end
         if nbufs > 1 or opts.single_buffer_has_mark then
             -- curname = escape_content(curname, opts)
-            curprefix = opts.infill_marks.file_name .. curname .. opts.infill_marks.file_content .. curprefix
+            curprefix = opts.marks.file_name .. curname .. opts.marks.file_content .. curprefix
         end
         if #fullprefix ~= 0 then
-            curprefix = fullprefix .. opts.infill_marks.begin_above_mark .. curprefix
+            curprefix = fullprefix .. opts.marks.begin_above_mark .. curprefix
         end
 
     elseif opts.single_buffer_has_mark then
         -- curname = escape_content(curname, opts)
-        curprefix = opts.infill_marks.file_name .. curname .. opts.infill_marks.file_content .. curprefix
+        curprefix = opts.marks.file_name .. curname .. opts.marks.file_content .. curprefix
     end
 
     if opts.list_cwd_files then
         local scanner = vim.loop.fs_scandir(cwd)
         if scanner then
-            local fileinfo = opts.infill_marks.cwd_files
+            local fileinfo = opts.marks.cwd_files
             local had = false
             while true do
                 local file = vim.loop.fs_scandir_next(scanner)
@@ -123,7 +123,7 @@ function M.fetch_code(cwd, opts)
                 fileinfo = fileinfo .. file .. '\n'
                 had = true
             end
-            fileinfo = fileinfo .. opts.infill_marks.cwd_eos
+            fileinfo = fileinfo .. opts.marks.cwd_eos
             if had then
                 curprefix = fileinfo .. curprefix
             end

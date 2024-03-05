@@ -81,4 +81,42 @@ function M.trim_prefix_and_suffix(prefix, suffix, opts)
     return prefix, suffix
 end
 
+function M.count_space_nls(prefix, rid_prefix_space, rid_prefix_newline)
+    local ridspace = 0
+    local ridnewline = 0
+    if rid_prefix_space then
+        while #prefix > 0 and prefix:byte(-1) == 32 do
+            prefix = prefix:sub(1, -2)
+            ridspace = ridspace + 1
+        end
+    end
+    if rid_prefix_newline then
+        while #prefix > 0 and prefix:byte(-1) == 10 do
+            prefix = prefix:sub(1, -2)
+            ridnewline = ridnewline + 1
+        end
+    end
+    return prefix, ridspace, ridnewline
+end
+
+function M.rid_space_nls(result, ridspace, ridnewline)
+    while ridnewline > 0 and #result ~= 0 do
+        if result:byte() == 10 then
+            result = result:sub(2)
+            ridnewline = ridnewline - 1
+        else
+            ridnewline = 0
+        end
+    end
+    while ridspace > 0 and #result ~= 0 do
+        if result:byte() == 32 then
+            result = result:sub(2)
+            ridspace = ridspace - 1
+        else
+            ridspace = 0
+        end
+    end
+    return result
+end
+
 return M
