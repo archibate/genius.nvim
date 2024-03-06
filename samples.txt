@@ -1,0 +1,22 @@
+Samples for training my code completion model.
+=======
+#include <algorithm>
+#include <iostream>
+#include <vector>
+int main() {
+    // input an integer array🚀
+    std::vector<int> vec;
+    for (int n; std::cin >> n;)
+        vec.push_back(n);
+    return 0;
+}
+=======
+#include <cstdio>
+int main() {
+    printf("🚀Hello, world!\n");
+    return 0;
+}
+=======
+#include <GL/gl.h>
+#include <GL/glut.h>
+int main() {

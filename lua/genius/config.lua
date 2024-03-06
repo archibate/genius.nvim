@@ -65,6 +65,28 @@ local default_opts = {
             temperature = 0.5,
         },
     },
+    config_google = {
+        api_type = 'google',
+        api_key = os.getenv("GOOGLE_API_KEY"),
+        base_url = "https://generativelanguage.googleapis.com",
+        chat_options = {
+            model = 'gemini-pro',
+            generationConfig = {
+                maxOutputTokens = 1024,
+                temperature = 0.5,
+            },
+        },
+        infill_marks = {
+            completion = "Do code completion based on the following code. No repeat. Indentation must be correct. Be short and relevant.\n\n",
+        },
+        infill_options = {
+            model = 'gemini-pro',
+            generationConfig = {
+                maxOutputTokens = 100,
+                temperature = 0.5,
+            },
+        },
+    },
     config_minimax = {
         api_type = 'minimax',
         group_id = os.getenv("MINIMAX_GROUP_ID"),
