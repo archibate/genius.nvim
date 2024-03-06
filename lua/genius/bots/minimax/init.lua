@@ -4,7 +4,7 @@ local request_http = require 'genius.http'
 local utils = require 'genius.utils'
 local opts = require 'genius.config'
 
-function M.request_chat_pro(messages, seed, options, chat_options, callback, stream)
+function M.request_chat_pro(messages, seed, options, chat_options, callback, stream, nocodeblocks)
     local api_key = options.api_key
     local group_id = ''
     if options.group_id then
@@ -22,12 +22,14 @@ function M.request_chat_pro(messages, seed, options, chat_options, callback, str
         assert(type(res) == 'table')
         if res.base_resp.status_code ~= 0 then
             -- utils.report('API key: ' .. vim.inspect(options))
-            utils.report('API error: ' .. res.base_resp.status_msg)
+            utils.report(res.base_resp.status_msg)
             return
         end
         local m = res.choices[1].messages
         local content = m[#m].text or ''
-        content = content:gsub('^```%w*\n', ''):gsub('\n```$', '')
+        if nocodeblocks then
+            content = content:gsub('^```%w*\n', ''):gsub('\n```$', '')
+        end
         -- if not stream and res.usage then
         --     local price = (res.usage.prompt_tokens * opts.chat_marks.input_price + res.usage.completion_tokens * opts.chat_marks.output_price) * 0.001
         -- end
@@ -95,7 +97,7 @@ function M.on_complete(prefix, suffix, on_complete, options)
             text = prefix,
         },
     }
-    return M.request_chat_pro(messages, -1, options, chatopts, on_complete, false)
+    return M.request_chat_pro(messages, -1, options, chatopts, on_complete, false, true)
 end
 
 function M.on_chat(messages, on_stream, options)
@@ -117,7 +119,7 @@ function M.on_chat(messages, on_stream, options)
             },
         },
     })
-    return M.request_chat_pro(new_messages, -1, options, chatopts, on_stream, opts.chat_stream)
+    return M.request_chat_pro(new_messages, -1, options, chatopts, on_stream, opts.chat_stream, true)
 end
 
 return M

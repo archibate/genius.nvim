@@ -77,7 +77,10 @@ local default_opts = {
             },
         },
         infill_marks = {
-            completion = "Do code completion based on the following code. No repeat. Indentation must be correct. Be short and relevant.\n\n",
+            may_no_suffix = false,
+            prefix = 'What should be inserted at <CURSOR>?\n',
+            suffix = '<CURSOR>',
+            middle = '',
         },
         infill_options = {
             model = 'gemini-pro',
