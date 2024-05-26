@@ -8,11 +8,11 @@ local function request_http(base_url, uri, data, callback, stream, authorization
     end
     local headers = {
         ['Content-Type'] = 'application/json',
+        ['Authorization'] = authorization,
     }
-    if authorization then
-        headers['Authorization'] = authorization
-    end
-    local function begin_request()
+    -- base_url = 'http://127.0.0.1:8080/' .. base_url
+    -- vim.notify(vim.inspect(headers))
+    local function begin_request(ok_url)
         local canceled = false
         local t0 = vim.fn.reltime()
         local opts = {
@@ -62,7 +62,7 @@ local function request_http(base_url, uri, data, callback, stream, authorization
                 return callback(result, dt)
             end)
         end
-        local success, job = pcall(curl.post, base_url .. uri, opts)
+        local success, job = pcall(curl.post, ok_url .. uri, opts)
         -- vim.notify(vim.inspect(job))
         if not success then
             utils.report('curl.post invocation failed')
@@ -77,46 +77,56 @@ local function request_http(base_url, uri, data, callback, stream, authorization
             end
         end
     end
-    if state.plugin_ready[base_url] == true then
-        return begin_request()
-    elseif state.plugin_ready[base_url] == nil then
+    if state.plugin_ready[base_url] == nil then
         local canceler = nil
         local canceled = false
-        if string.match(uri, '^/v1/c') then
-            curl.get(base_url .. '/v1/models', {
-                on_error = vim.schedule_wrap(function ()
-                    state.plugin_ready[base_url] = false
-                    utils.report('completion server not ready (failed to connect)')
-                end),
-                callback = vim.schedule_wrap(function (res)
-                    if res.status ~= 200 then
-                        state.plugin_ready[base_url] = false
-                        if res.status == 401 then
-                            utils.report('completion server not ready (status 401, invalid API key)')
-                        else
-                            utils.report('completion server not ready (status ' .. res.status .. ')')
-                        end
-                    else
-                        state.plugin_ready[base_url] = true
+        for test_url in base_url:gmatch("[^\r\n]+") do
+            if string.match(uri, '^/v1/c') then
+                curl.get(test_url .. '/v1/models', {
+                    on_error = vim.schedule_wrap(function ()
                         if canceled then return end
-                        canceler = begin_request()
-                    end
-                end),
-            })
-        else
-            curl.get(base_url .. '/', {
-                on_error = vim.schedule_wrap(function ()
-                    state.plugin_ready[base_url] = false
-                    utils.report('completion server not ready (failed to connect)')
-                end),
-                callback = vim.schedule_wrap(function (res)
-                    _ = res
-                    state.plugin_ready[base_url] = true
-                    if canceled then return end
-                    canceler = begin_request()
-                    -- end
-                end),
-            })
+                        state.plugin_ready[base_url] = ''
+                        utils.report(test_url .. ': completion server not ready (failed to connect)')
+                    end),
+                    callback = vim.schedule_wrap(function (res)
+                        if canceled then return end
+                        if res.status ~= 200 then
+                            state.plugin_ready[base_url] = ''
+                            if res.status == 401 then
+                                utils.report(test_url .. ': completion server not ready (status 401, invalid API key)')
+                            else
+                                utils.report(test_url .. ': completion server not ready (status ' .. res.status .. ')')
+                            end
+                        else
+                            canceled = true
+                            state.plugin_ready[base_url] = test_url
+                            canceler = begin_request(test_url)
+                        end
+                    end),
+                    headers = {
+                        ['Authorization'] = authorization,
+                    },
+                })
+            else
+                curl.get(test_url .. '/', {
+                    on_error = vim.schedule_wrap(function ()
+                        if canceled then return end
+                        state.plugin_ready[base_url] = ''
+                        utils.report(test_url .. ': completion server not ready (failed to connect)')
+                    end),
+                    callback = vim.schedule_wrap(function (res)
+                        if canceled then return end
+                        _ = res
+                        canceled = true
+                        state.plugin_ready[base_url] = test_url
+                        canceler = begin_request(test_url)
+                        -- end
+                    end),
+                    headers = {
+                        ['Authorization'] = authorization,
+                    },
+                })
+            end
         end
         return function ()
             canceled = true
@@ -124,6 +134,8 @@ local function request_http(base_url, uri, data, callback, stream, authorization
                 canceler()
             end
         end
+    elseif state.plugin_ready[base_url] ~= '' then
+        return begin_request(state.plugin_ready[base_url])
     else
         return function () end
     end

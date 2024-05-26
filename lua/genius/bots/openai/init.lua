@@ -6,6 +6,7 @@ local opts = require 'genius.config'
 
 function M.request_legacy_completion(prompt, suffix, seed, options, callback, stream)
     local api_key = options.api_key
+    -- vim.notify(api_key)
     -- vim.notify(vim.inspect(api_key))
     -- vim.notify(vim.inspect(messages))
     return request_http(options.base_url, '/v1/completions', vim.tbl_extend('force', {
