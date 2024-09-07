@@ -42,7 +42,7 @@ The hold delay can be customized in the setup:
 
 ```lua
 require"genius".setup {
-    completion_delay_ms = 2000, -- microseconds before completion triggers, set this to -1 to disable and only allows manual trigger
+    completion_delay_ms = 2000, -- miliseconds before completion triggers, set this to -1 to disable and only allows manual trigger
 }
 ```
 
